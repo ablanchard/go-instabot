@@ -26,10 +26,10 @@ func login() {
 }
 
 func syncFollowers() {
+	err := insta.Account.Sync()
+	check(err)
 	following := insta.Account.Following()
-	check(following.Error())
-	followers:= insta.Account.Followers()
-	check(followers.Error())
+	followers := insta.Account.Followers()
 
 	var users []goinsta.User
 	for _, user := range following.Users {
@@ -162,7 +162,6 @@ func goThrough(images []goinsta.Item) {
 			break
 		}
 
-
 		// Getting the user info
 		// Instagram will return a 500 sometimes, so we will retry 10 times.
 		// Check retry() for more info.
@@ -188,6 +187,11 @@ func goThrough(images []goinsta.Item) {
 		comment := followerCount > commentLowerLimit && followerCount < commentUpperLimit && numCommented < limits["comment"] && like
 
 		// Checking if we are already following current user and skipping if we do
+		err = retry(10, 20*time.Second, func() (err error) {
+			err = poster.FriendShip()
+			return
+		})
+		check(err)
 		skip := poster.Friendship.Following
 
 		// Like, then comment/follow
@@ -196,12 +200,12 @@ func goThrough(images []goinsta.Item) {
 			check(err)
 			likeImage(media.Items[0])
 			if follow {
-					followUser(poster)
+				followUser(poster)
 			} else {
 				log.Println("Not in the follow global limits, did nothing")
 			}
 			if comment {
-					commentImage(media.Items[0])
+				commentImage(media.Items[0])
 			} else {
 				log.Println("Not in the comment global limits, did nothing")
 			}
